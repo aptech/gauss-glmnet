@@ -1,0 +1,259 @@
+#include glmnet.sdf;
+
+#definecs GLMNET_DEFAULT_THRESH 1e-5
+#definecs GLMNET_DEFAULT_FLMIN 0.001
+#definecs GLMNET_DEFAULT_NLAM 100
+#definecs __GLMNET_NORMAL 1
+/*
+** glmnet
+**
+** Purpose
+**         Estimates the parameters of a generalized linear model via penalized maximum likelihood.
+**
+** Format
+**        out = glmnet(y, X);
+**        out = glmnet(y, X, family);
+**        out = glmnet(y, X, family, ctl);
+**
+** Inputs
+**
+**       y       Nx1 vector, the dependent variable.
+**
+**       X       NxP matrix, the dependent variables.
+**
+**       family  Optional input, string, the distribution of the dependent variable.
+**               Currently only 'normal' is supported.
+**
+**       ctl     Optional input, glmnetControl structure with the following members.
+**
+**       ctl.alpha        The elasticnet mixing parameter. 0 <= alpha <= 1.
+**                        (1 - alpha) * L2 + alpha * L1. alpha = 1 for LASSO.
+**                        alpha = 0 for Ridge. Default = 1.
+**
+**       ctl.nlam         Maximum number of lambda values. Default = 100.
+**                        Note this will be ignored if specific 'lambdas' are supplied.
+**
+**       ctl.weights      Observation weights.
+**
+**       ctl.penalties    Px1 vector, relative penalty for each predictor.
+**
+**       ctl.standardize  1 to standardize predictors before estimation, 0 to use
+**                        unstandardized predictors. Parameter estimates are always
+**                        returned in terms of unstandardized parameters. Default = 1.
+**                        11/27/2018 -- currently unused. Set to 1 in the CPP code.
+**
+**       ctl.lambdas       User supplied lambda values. If set, 'nlam' will be ignored.
+**                         Not recommended for use.
+**
+**       ctl.threshold     Convergence threshold for each lambda solution. Default = 1e-5.
+**                         Iterations stop when the maximum reduction in the criterion value
+**                         as a result of each parameter update over a single pass
+**                         is less than 'threshold' times the null criterion value.
+**
+**       ctl.largest       Maximum number of variables allowed to enter the model. Default is all predictors.
+**
+**       ctl.flmin         if flmin < 1.0:
+**                             Minimum lamda = flmin*(largest lamda value)
+**                         if flmin >= 1.0:
+**                             Use supplied lambda values (see 'lambdas' member above). Default = 0.001.
+**
+**       ctl.exclude       Variables, columns of 'X', to exclude from consideration for the model.
+**
+**
+** Remarks
+**
+**     This package uses Fortran code written by Hastie, et al and released under the GPL license, version 2.0.
+**
+** References
+**
+**     Friedman, J., Hastie, T. and Tibshirani, R. (2008) Regularization Paths for Generalized Linear Models via Coordinate Descent, https://web.stanford.edu/~hastie/Papers/glmnet.pdf
+**     Journal of Statistical Software, Vol. 33(1), 1-22 Feb 2010 http://www.jstatsoft.org/v33/i01/
+**
+**     Simon, N., Friedman, J., Hastie, T., Tibshirani, R. (2011) Regularization Paths for Cox's Proportional Hazards Model via Coordinate Descent, Journal of Statistical Software, Vol. 39(5) 1-13
+**     http://www.jstatsoft.org/v39/i05/
+**
+**     Tibshirani, Robert., Bien, J., Friedman, J.,Hastie, T.,Simon, N.,Taylor, J. and Tibshirani, Ryan. (2012) Strong Rules for Discarding Predictors in Lasso-type Problems, JRSSB vol 74,
+**     http://statweb.stanford.edu/~tibs/ftp/strong.pdf
+*/
+
+
+proc (1) = glmnet(target, predictors, ...);
+    local w, jd, jd_len, vp, nlam, flmin, thr;
+    local no, ni, ia, nin, alm, nlp, jerr, r /* ret */;
+    local n_lambdas, intercept, coef, rsquared, lambdas;
+    local _, max_vars_in_mdl, ulam, cl, rho, family;
+    
+    dlibrary -a gmlglmnet;
+    
+    struct glmnetControl ctl;
+    
+    { family, ctl } = __process_glmnet_dynargs(...);
+    rho = ctl.alpha;
+    
+    
+    // user lambdas
+    ulam = {};
+    
+    if cols(predictors) < ctl.largest;
+        errorlogat "glmnet: Need largest <= cols(X)";
+        end;
+    else;
+        max_vars_in_mdl = ctl.largest;
+    endif;
+    
+    if ctl.exclude != 0;
+        // Fortran code uses first element as a key to know
+        // how many elements should be excluded
+        ctl.exclude = rows(ctl.exclude)|ctl.exclude;
+    endif;
+    
+    if ctl.nlam != GLMNET_DEFAULT_NLAM;
+        if not isempty(ctl.lambdas);
+            errorlogat "glmnet: Can't specify both lambdas & custom nlam";
+            end;
+        endif;
+    endif;
+    
+    if ctl.flmin != GLMNET_DEFAULT_FLMIN;
+        ulam = {};
+    endif;
+    
+    // using alpha, must set these values
+    if not isempty(ctl.lambdas);
+        if ctl.flmin != GLMNET_DEFAULT_FLMIN;
+            errorlogat "glmnet: Can't specify both lambdas & custom flmin.";
+            end;
+        endif;
+        
+        ulam = ctl.lambdas;
+        ctl.flmin = 2.; // Pass flmin > 1.0 indicating to use the user-supplied.
+        ctl.nlam = rows(ulam);
+    endif;
+    
+    // Uniform weighting if no weights are specified.
+    if isempty(ctl.weights);
+        ctl.weights = ones(rows(predictors), 1);
+    endif;
+    
+    // Uniform penalties if none were specified.
+    if isempty(ctl.penalties);
+        ctl.penalties = ones(1, cols(predictors));
+    endif;
+    
+    n_lambdas = 0;
+    intercept = zeros(ctl.nlam, 1);
+    coef = zeros(ctl.nlam, max_vars_in_mdl);
+    ia = zeros(max_vars_in_mdl, 1);
+    nin = zeros(ctl.nlam, 1);
+    rsquared = zeros(ctl.nlam, 1);
+    lambdas = zeros(ctl.nlam, 1);
+    nlp = 0;
+    jerr = 0;
+    
+    no = rows(predictors);
+    ni = cols(predictors);
+    w = ctl.weights;
+    jd = ctl.exclude;
+    jd_len = rows(jd);
+    vp = ctl.penalties;
+    nlam = ctl.nlam;
+    flmin = ctl.flmin;
+    thr = ctl.threshold;
+    cl = (__INFN|__INFP).*ones(ni,2);
+    
+    predictors = predictors';
+    w = ones(rows(target), 1);
+    
+    
+    
+    dllcall gml_elnet(rho /*balance*/, no, ni, predictors /*X*/, target /*y*/, w, jd, jd_len, vp, cl, max_vars_in_mdl, nlam, flmin, ulam, thr,
+        
+        /* returns */
+        n_lambdas /*lmu*/,
+        intercept /*a0*/,
+        coef /*ca*/,
+        ia,
+        nin,
+        rsquared /*rsq*/,
+        lambdas /*alm*/,
+        nlp,
+        jerr);
+    
+    if jerr != 0;
+        if jerr == 10000;
+            errorlogat "glmnet: cannot have max(vp) < 0.0";
+            end;
+        elseif jerr == 7777;
+            errorlogat "glmnet: all used predictors have 0 variance";
+            end;
+        elseif jerr < 7777;
+            errorlogat "glmnet: returned error code" $+ ntos(jerr);
+            end;
+        else;
+            errorlogat "glmnet: unknown error code" $+ ntos(jerr);
+            end;
+        endif;
+    endif;
+    
+    struct glmnetResult rslt;
+    rslt.n_lambdas = n_lambdas;
+    rslt.intercept = intercept[1:n_lambdas]';
+    rslt.betas = coef[1:n_lambdas,.]';
+    rslt.lambdas = lambdas[1:n_lambdas];
+    rslt.r_squared = rsquared[1:n_lambdas];
+    
+    retp(rslt);
+endp;
+
+
+#include dynargs.dec
+proc (1) = glmnetControlCreate();
+    struct glmnetControl ctl;
+    ctl.threshold = GLMNET_DEFAULT_THRESH;
+    ctl.weights = {};
+    ctl.standardize = 1;
+    ctl.exclude = 0;
+    ctl.penalties = {};
+    ctl.lambdas = {};
+    ctl.largest = {};
+    ctl.flmin = GLMNET_DEFAULT_FLMIN;
+    ctl.nlam = GLMNET_DEFAULT_NLAM;
+    retp(ctl);
+endp;
+
+proc (2) = __process_glmnet_dynargs(...);
+    local n_dynargs, family;
+    
+    family = __GLMNET_NORMAL;
+    n_dynargs = COUNT_DYNARGS;
+    if n_dynargs;
+        if n_dynargs > 2;
+            errorlogat "'glmnet' accepts 2-4 arguments, '"$+ntos(n_dynargs+2)$+"' passed in";
+            end;
+        endif;
+        
+        // Is the first dynamic argument a string?
+        if contains(type(sysstate(GET_ONE_DYNARG, 1), 13|15));
+            family = sysstate(GET_ONE_DYNARG, 1);
+            if family $== "normal";
+                family = __GLMNET_NORMAL;
+            else;
+                errorlogat "'normal' is the only family currently supported, '"$+family$+"' passed in";
+                end;
+            endif;
+        else;
+            errorlogat "'glmnet' input 2 must be a string containing the family name";
+            end;
+        endif;
+        
+        if n_dynargs == 2;
+            // If the second dynamic input is a struct
+            if type(sysstate(GET_ONE_DYNARG, 2) == 17);
+                // First dynamic argument has already been validated
+                retp(...);
+            endif;
+        endif;
+    endif;
+    retp(family, glmnetcontrolCreate());
+endp;
+

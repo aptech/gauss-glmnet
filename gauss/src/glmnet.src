@@ -83,7 +83,7 @@ proc (1) = glmnetFit(target, predictors, ...);
     local n_lambdas, intercept, coef, rsquared, lambdas;
     local _, max_vars_in_mdl, ulam, cl, rho, family;
     
-    dlibrary -a gmlglmnet;
+    dlibrary -a glmnet;
     
     struct glmnetControl ctl;
     

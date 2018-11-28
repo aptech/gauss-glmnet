@@ -5,15 +5,15 @@
 #definecs GLMNET_DEFAULT_NLAM 100
 #definecs __GLMNET_NORMAL 1
 /*
-** glmnet
+** glmnetFit
 **
 ** Purpose
 **         Estimates the parameters of a generalized linear model via penalized maximum likelihood.
 **
 ** Format
-**        out = glmnet(y, X);
-**        out = glmnet(y, X, family);
-**        out = glmnet(y, X, family, ctl);
+**        out = glmnetFit(y, X);
+**        out = glmnetFit(y, X, family);
+**        out = glmnetFit(y, X, family, ctl);
 **
 ** Inputs
 **
@@ -77,7 +77,7 @@
 */
 
 
-proc (1) = glmnet(target, predictors, ...);
+proc (1) = glmnetFit(target, predictors, ...);
     local w, jd, jd_len, vp, nlam, flmin, thr;
     local no, ni, ia, nin, alm, nlp, jerr, r /* ret */;
     local n_lambdas, intercept, coef, rsquared, lambdas;
@@ -94,11 +94,15 @@ proc (1) = glmnet(target, predictors, ...);
     // user lambdas
     ulam = {};
     
-    if cols(predictors) < ctl.largest;
-        errorlogat "glmnet: Need largest <= cols(X)";
-        end;
+    if ismiss(ctl.largest);
+        max_vars_in_mdl = cols(predictors);
     else;
-        max_vars_in_mdl = ctl.largest;
+        if cols(predictors) < ctl.largest;
+            errorlogat "glmnetFit: Need largest <= cols(X)";
+            end;
+        else;
+            max_vars_in_mdl = ctl.largest;
+        endif;
     endif;
     
     if ctl.exclude != 0;
@@ -109,7 +113,7 @@ proc (1) = glmnet(target, predictors, ...);
     
     if ctl.nlam != GLMNET_DEFAULT_NLAM;
         if not isempty(ctl.lambdas);
-            errorlogat "glmnet: Can't specify both lambdas & custom nlam";
+            errorlogat "glmnetFit: Can't specify both lambdas & custom nlam";
             end;
         endif;
     endif;
@@ -121,7 +125,7 @@ proc (1) = glmnet(target, predictors, ...);
     // using alpha, must set these values
     if not isempty(ctl.lambdas);
         if ctl.flmin != GLMNET_DEFAULT_FLMIN;
-            errorlogat "glmnet: Can't specify both lambdas & custom flmin.";
+            errorlogat "glmnetFit: Can't specify both lambdas & custom flmin.";
             end;
         endif;
         
@@ -159,7 +163,7 @@ proc (1) = glmnet(target, predictors, ...);
     nlam = ctl.nlam;
     flmin = ctl.flmin;
     thr = ctl.threshold;
-    cl = (__INFN|__INFP).*ones(ni,2);
+    cl = (-1e10~1e10).*ones(ni,2);
     
     predictors = predictors';
     w = ones(rows(target), 1);
@@ -181,16 +185,16 @@ proc (1) = glmnet(target, predictors, ...);
     
     if jerr != 0;
         if jerr == 10000;
-            errorlogat "glmnet: cannot have max(vp) < 0.0";
+            errorlogat "glmnetFit: cannot have max(vp) < 0.0";
             end;
         elseif jerr == 7777;
-            errorlogat "glmnet: all used predictors have 0 variance";
+            errorlogat "glmnetFit: all used predictors have 0 variance";
             end;
         elseif jerr < 7777;
-            errorlogat "glmnet: returned error code" $+ ntos(jerr);
+            errorlogat "glmnetFit: returned error code" $+ ntos(jerr);
             end;
         else;
-            errorlogat "glmnet: unknown error code" $+ ntos(jerr);
+            errorlogat "glmnetFit: unknown error code" $+ ntos(jerr);
             end;
         endif;
     endif;
@@ -218,6 +222,7 @@ proc (1) = glmnetControlCreate();
     ctl.largest = {};
     ctl.flmin = GLMNET_DEFAULT_FLMIN;
     ctl.nlam = GLMNET_DEFAULT_NLAM;
+    ctl.alpha = 1;
     retp(ctl);
 endp;
 
@@ -228,7 +233,7 @@ proc (2) = __process_glmnet_dynargs(...);
     n_dynargs = COUNT_DYNARGS;
     if n_dynargs;
         if n_dynargs > 2;
-            errorlogat "'glmnet' accepts 2-4 arguments, '"$+ntos(n_dynargs+2)$+"' passed in";
+            errorlogat "'glmnetFit' accepts 2-4 arguments, '"$+ntos(n_dynargs+2)$+"' passed in";
             end;
         endif;
         
@@ -242,7 +247,7 @@ proc (2) = __process_glmnet_dynargs(...);
                 end;
             endif;
         else;
-            errorlogat "'glmnet' input 2 must be a string containing the family name";
+            errorlogat "'glmnetFit' input 2 must be a string containing the family name";
             end;
         endif;
         

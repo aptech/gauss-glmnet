@@ -1,7 +1,7 @@
 #include glmnet.sdf;
 
-#definecs GLMNET_DEFAULT_THRESH 1e-5
-#definecs GLMNET_DEFAULT_FLMIN 0.001
+#definecs GLMNET_DEFAULT_THRESH 1e-7
+#definecs GLMNET_DEFAULT_FLMIN 1e-4
 #definecs GLMNET_DEFAULT_NLAM 100
 #definecs __GLMNET_NORMAL 1
 /*
@@ -66,7 +66,7 @@
 **
 ** References
 **
-**     Friedman, J., Hastie, T. and Tibshirani, R. (2008) Regularization Paths for Generalized Linear Models via Coordinate Descent, https://web.stanford.edu/~hastie/Papers/glmnet.pdf
+**     Friedman, J., Hastie, T. and Tibshirani, R. (2008) Regularization Paths for Generalized Linear Models via Coordinate Descent, https://web.stanford.edu/~hastie/Papers/glmnetFit.pdf
 **     Journal of Statistical Software, Vol. 33(1), 1-22 Feb 2010 http://www.jstatsoft.org/v33/i01/
 **
 **     Simon, N., Friedman, J., Hastie, T., Tibshirani, R. (2011) Regularization Paths for Cox's Proportional Hazards Model via Coordinate Descent, Journal of Statistical Software, Vol. 39(5) 1-13
@@ -168,8 +168,6 @@ proc (1) = glmnetFit(target, predictors, ...);
     predictors = predictors';
     w = ones(rows(target), 1);
     
-    
-    
     dllcall gml_elnet(rho /*balance*/, no, ni, predictors /*X*/, target /*y*/, w, jd, jd_len, vp, cl, max_vars_in_mdl, nlam, flmin, ulam, thr,
         
         /* returns */
@@ -205,6 +203,7 @@ proc (1) = glmnetFit(target, predictors, ...);
     rslt.betas = coef[1:n_lambdas,.]';
     rslt.lambdas = lambdas[1:n_lambdas];
     rslt.r_squared = rsquared[1:n_lambdas];
+    rslt.df = sumc(rslt.betas .!= 0);
     
     retp(rslt);
 endp;
@@ -238,7 +237,7 @@ proc (2) = __process_glmnet_dynargs(...);
         endif;
         
         // Is the first dynamic argument a string?
-        if contains(type(sysstate(GET_ONE_DYNARG, 1), 13|15));
+        if contains(type(sysstate(GET_ONE_DYNARG, 1)), 13|15);
             family = sysstate(GET_ONE_DYNARG, 1);
             if family $== "normal";
                 family = __GLMNET_NORMAL;
@@ -253,7 +252,7 @@ proc (2) = __process_glmnet_dynargs(...);
         
         if n_dynargs == 2;
             // If the second dynamic input is a struct
-            if type(sysstate(GET_ONE_DYNARG, 2) == 17);
+            if type(sysstate(GET_ONE_DYNARG, 2)) == 17;
                 // First dynamic argument has already been validated
                 retp(...);
             endif;

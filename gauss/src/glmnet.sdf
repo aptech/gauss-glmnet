@@ -58,4 +58,5 @@ struct glmnetResult {
    matrix r_squared;
    matrix lambdas;
    matrix mse;
+   matrix df;
 };

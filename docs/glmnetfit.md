@@ -11,17 +11,15 @@ rslt = glmnetFit(y, X, family);
 rslt = glmnetFit(y, X, family, ctl);
 
 ## Input
-||
 |:---- |:-----|
-|y | Nx1 matrix, the dependent variable.
-|X | NxP matrix, the dependent variables.
-|family| Optional input, string, the distribution of the dependent variable. Currently "normal" is the only supported option.
-|ctl| Optional input, an instance of a `glmnetControl` structure.
+|y | Nx1 matrix, the dependent variable.|
+|X | NxP matrix, the dependent variables.|
+|family| Optional input, string, the distribution of the dependent variable. Currently "normal" is the only supported option.|
+|ctl| Optional input, an instance of a `glmnetControl` structure.|
 
 ## Output
-||
-|:----- |:----
-|rslt| An instance of a `glmnetResults` structure, containing the results of the estimation.
+|:----- |:----|
+|rslt| An instance of a `glmnetResults` structure, containing the results of the estimation.|
 
 ## Examples
 

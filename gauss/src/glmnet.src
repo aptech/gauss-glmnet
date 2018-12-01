@@ -207,6 +207,13 @@ proc (1) = glmnetFit(target, predictors, ...);
     rslt.intercept = intercept[1:n_lambdas]';
     rslt.betas = coef[1:n_lambdas,.]';
     rslt.lambdas = lambdas[1:n_lambdas];
+
+    // Replace huge number at top of lambda path
+    if n_lambdas > 2;
+        local ln_lam_tmp;
+        ln_lam_tmp = ln(lambdas[2:3]);
+        rslt.lambdas[1] = exp(2 * ln_lam_tmp[1] - ln_lam_tmp[2]);
+    endif;
     rslt.r_squared = rsquared[1:n_lambdas];
     rslt.df = sumc(rslt.betas .!= 0);
     

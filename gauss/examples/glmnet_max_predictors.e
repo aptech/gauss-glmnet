@@ -34,11 +34,11 @@ clrs = getHSLuvPalette(rows(idx));
 plotSetLineColor(&myPlot, clrs);
 
 plotSetXLabel(&myPlot, "L1 Norm", "arial", 14);
-plotSetYLabel(&myPlot, "Coefficients");
+plotSetYLabel(&myPlot, "Coefficient value");
 
 // Specify predictor index in legend
 plotSetTextInterpreter(&myPlot, "Latex", "legend");
-plotSetLegend(&myPlot, "X_{"$+ntos(idx)$+"}", "top right inside", 1);
+plotSetLegend(&myPlot, "\\beta_{"$+ntos(idx)$+"}", "top right inside", 1);
 
 // Comment out line below to run with GAUSS 18
 plotSetLegendBkd(&myPlot, 0);

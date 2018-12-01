@@ -17,19 +17,15 @@ rslt = glmnetFit(y, X, family, ctl);
 |X | NxP matrix, the dependent variables.|
 |family| Optional input, string, the distribution of the dependent variable. Currently "normal" is the only supported option.|
 |ctl| Optional input, an instance of a `glmnetControl` structure.|
-| ctl.alpha|         The elasticnet mixing parameter. 0 <= alpha <= 1.
-               (1 - alpha) * L2 + alpha * L1. alpha = 1 for LASSO.
-               alpha = 0 for Ridge. Default = 1.|
-| ctl.nlam |         Maximum number of lambda values. Default = 100. |
-|               Note this will be ignored if specific 'lambdas' are supplied. |
+| ctl.alpha|         The elasticnet mixing parameter. 0 <= alpha <= 1.  (1 - alpha) * L2 + alpha * L1. alpha = 1 for LASSO. alpha = 0 for Ridge. Default = 1.|
+| ctl.nlam |         Maximum number of lambda values. Default = 100. Note this will be ignored if specific 'lambdas' are supplied. |
 | ctl.weights|       Observation weights. |
 | ctl.penalties|     Px1 vector, relative penalty for each predictor. |
 | ctl.standardize|   1 to standardize predictors before estimation, 0 to use
                unstandardized predictors. Parameter estimates are always
                returned in terms of unstandardized parameters. Default = 1.
                11/27/2018 -- currently unused. Set to 1 in the CPP code. |
-| ctl.lambdas|       User supplied lambda values. If set, 'nlam' will be ignored.
-               Not recommended for use. |
+| ctl.lambdas|       User supplied lambda values. If set, 'nlam' will be ignored. Not recommended for use. |
 | ctl.threshold|     Convergence threshold for each lambda solution. Default = 1e-5. 
                Iterations stop when the maximum reduction in the criterion value
                as a result of each parameter update over a single pass
@@ -50,7 +46,7 @@ rslt = glmnetFit(y, X, family, ctl);
 
 ## Examples
 
-### Basic example
+### Basic example with default settings
 
 ```
 // Get full path to dataset
@@ -73,4 +69,33 @@ y_hat = X * rslt.betas + rslt.intercept;
 
 // Compute MSE for each lambda value
 mse = meanc((lpsa - y_hat).^2);
+```
+
+### Example 2: Minimize number of possible variables in the model 
+
+```
+// Get full path to dataset
+fname = getGAUSSHome() $+ "pgks/glmnet/examples/pcancer.csv";
+
+// Load all variables
+X = loadd(fname);
+
+lpsa = X[.,9];
+X = X[.,1:8];
+
+// Declare control structure and fill with default settings
+struct glmnetControl ctl;
+ctl = glmnetControlcreate();
+
+// Do not allow more than 3 predictors in the model
+ctl.largest = 3;
+
+// To hold estimation results
+struct glmnetResult rslt;
+
+// Estimate model
+rslt = glmnetFit(lpsa, X);
+
+// Compute predictions for each lambda value
+y_hat = X * rslt.betas + rslt.intercept;
 ```

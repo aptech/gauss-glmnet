@@ -51,6 +51,20 @@ struct glmnetControl {
    scalar alpha;
 };
 
+/*
+** glmnetResult
+**
+** Members
+**
+** n_lambdas     Scalar, the number of lambda values for which the model was estimated.
+** intercept     1 x n_lambdas vector, containing the intercept estimate for each lambda.
+** betas         P x n_lambdas matrix, containing the parameter estimates for each lambda.
+** r_sqaured     n_lambdas x 1 vector, containing the r_squared for each estimated model.
+** lambdas       n_lambdas x 1 vector, containing the values of the lambda path.
+** mse           mean squared error, currently not used.
+** df            n_lambdas x 1 vector, the degrees of freedom for each estimated model.
+*/
+
 struct glmnetResult {
    scalar n_lambdas;
    matrix intercept;

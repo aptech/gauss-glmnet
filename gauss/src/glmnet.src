@@ -143,10 +143,12 @@ proc (1) = glmnetFit(target, predictors, ...);
     if isempty(ctl.penalties);
         ctl.penalties = ones(1, cols(predictors));
     endif;
-    
+
+    no = rows(predictors);
+    ni = cols(predictors);    
     n_lambdas = 0;
     intercept = zeros(ctl.nlam, 1);
-    coef = zeros(ctl.nlam, max_vars_in_mdl);
+    coef = zeros(ctl.nlam, ni);
     ia = zeros(max_vars_in_mdl, 1);
     nin = zeros(ctl.nlam, 1);
     rsquared = zeros(ctl.nlam, 1);
@@ -154,8 +156,7 @@ proc (1) = glmnetFit(target, predictors, ...);
     nlp = 0;
     jerr = 0;
     
-    no = rows(predictors);
-    ni = cols(predictors);
+
     w = ctl.weights;
     jd = ctl.exclude;
     jd_len = rows(jd);
@@ -188,11 +189,15 @@ proc (1) = glmnetFit(target, predictors, ...);
         elseif jerr == 7777;
             errorlogat "glmnetFit: all used predictors have 0 variance";
             end;
+        elseif jerr < -10000;
+            // This case means that at the abs(jerr + 10000) lambda value
+            // the number of predictors in the model exceeds ctl.largest,
+            // so only abs(jerr + 10000) lambda values are in the lambda path
         elseif jerr < 7777;
-            errorlogat "glmnetFit: returned error code" $+ ntos(jerr);
+            errorlogat "glmnetFit: returned error code " $+ ntos(jerr);
             end;
         else;
-            errorlogat "glmnetFit: unknown error code" $+ ntos(jerr);
+            errorlogat "glmnetFit: unknown error code " $+ ntos(jerr);
             end;
         endif;
     endif;

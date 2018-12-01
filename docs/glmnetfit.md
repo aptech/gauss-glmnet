@@ -34,13 +34,13 @@ rslt = glmnetFit(y, X, family, ctl);
 |Name|Description|
 |:----- |:----|
 |rslt| An instance of a `glmnetResults` structure, containing the results of the estimation.|
-|n_lambdas |    Scalar, the number of lambda values for which the model was estimated.|
-|intercept |    1 x n_lambdas vector, containing the intercept estimate for each lambda.|
-|betas     |    P x n_lambdas matrix, containing the parameter estimates for each lambda.|
-|r_sqaured |    n_lambdas x 1 vector, containing the r_squared for each estimated model.|
-|lambdas   |    n_lambdas x 1 vector, containing the values of the lambda path.|
-|mse       |    mean squared error, currently not used.|
-|df        |    n_lambdas x 1 vector, the degrees of freedom for each estimated model.|
+|rslt.n_lambdas |    Scalar, the number of lambda values for which the model was estimated.|
+|rslt.intercept |    1 x n_lambdas vector, containing the intercept estimate for each lambda.|
+|rslt.betas     |    P x n_lambdas matrix, containing the parameter estimates for each lambda.|
+|rslt.r_sqaured |    n_lambdas x 1 vector, containing the r_squared for each estimated model.|
+|rslt.lambdas   |    n_lambdas x 1 vector, containing the values of the lambda path.|
+|rslt.mse       |    mean squared error, currently not used.|
+|rslt.df        |    n_lambdas x 1 vector, the degrees of freedom for each estimated model.|
 
 
 ## Examples

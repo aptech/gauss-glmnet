@@ -66,5 +66,6 @@ plotSetYLabel(&myPlot, "\\text{Test set MSE}");
 
 plotSetTitle(&myPlot, "Prostate cancer lpsa prediction with ridge regression", font_name, 18);
 
-plotXY(myPlot, 1./rslt.lambdas, rslt.mse);
+plotCanvasSize("px", 800 | 600);
 
+plotXY(myPlot, 1./rslt.lambdas, rslt.mse);

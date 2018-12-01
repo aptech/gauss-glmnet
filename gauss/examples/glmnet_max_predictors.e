@@ -48,6 +48,8 @@ plotSetXRange(&myPlot, 0, 8);
 
 plotSetTitle(&myPlot, "LASSO regression, limit 10 predictors", "arial", 18);
 
+plotCanvasSize("px", 800 | 600);
+
 // Plot the path for each coefficient
 // included in the final model
 plotXY(myPlot, l1, b[.,idx]);

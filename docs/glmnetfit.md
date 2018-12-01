@@ -21,20 +21,11 @@ rslt = glmnetFit(y, X, family, ctl);
 | ctl.nlam |         Maximum number of lambda values. Default = 100. Note this will be ignored if specific 'lambdas' are supplied. |
 | ctl.weights|       Observation weights. |
 | ctl.penalties|     Px1 vector, relative penalty for each predictor. |
-| ctl.standardize|   1 to standardize predictors before estimation, 0 to use
-               unstandardized predictors. Parameter estimates are always
-               returned in terms of unstandardized parameters. Default = 1.
-               11/27/2018 -- currently unused. Set to 1 in the CPP code. |
+| ctl.standardize|   1 to standardize predictors before estimation, 0 to use unstandardized predictors. Parameter estimates are always returned in terms of unstandardized parameters. Default = 1. 11/27/2018 -- currently unused. Set to 1 in the CPP code. |
 | ctl.lambdas|       User supplied lambda values. If set, 'nlam' will be ignored. Not recommended for use. |
-| ctl.threshold|     Convergence threshold for each lambda solution. Default = 1e-5. 
-               Iterations stop when the maximum reduction in the criterion value
-               as a result of each parameter update over a single pass
-               is less than 'threshold' times the null criterion value. |
+| ctl.threshold|     Convergence threshold for each lambda solution. Default = 1e-5. Iterations stop when the maximum reduction in the criterion value as a result of each parameter update over a single pass is less than 'threshold' times the null criterion value. |
 | ctl.largest  |     Maximum number of variables allowed to enter the model. Default is all predictors. |
-| ctl.flmin    |     if flmin < 1.0:
-                   Minimum lamda = flmin*(largest lamda value)
-               if flmin >= 1.0:
-                   Use supplied lambda values (see 'lambdas' member above). Default = 0.001. |
+| ctl.flmin    |     if flmin < 1.0: Minimum lamda = flmin*(largest lamda value) if flmin >= 1.0: Use supplied lambda values (see 'lambdas' member above). Default = 0.001. |
 | ctl.exclude  |  Variables, columns of 'X', to exclude from consideration for the model. | 
 
 
@@ -43,6 +34,14 @@ rslt = glmnetFit(y, X, family, ctl);
 |Name|Description|
 |:----- |:----|
 |rslt| An instance of a `glmnetResults` structure, containing the results of the estimation.|
+|n_lambdas |    Scalar, the number of lambda values for which the model was estimated.|
+|intercept |    1 x n_lambdas vector, containing the intercept estimate for each lambda.|
+|betas     |    P x n_lambdas matrix, containing the parameter estimates for each lambda.|
+|r_sqaured |    n_lambdas x 1 vector, containing the r_squared for each estimated model.|
+|lambdas   |    n_lambdas x 1 vector, containing the values of the lambda path.|
+|mse       |    mean squared error, currently not used.|
+|df        |    n_lambdas x 1 vector, the degrees of freedom for each estimated model.|
+
 
 ## Examples
 

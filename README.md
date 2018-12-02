@@ -17,3 +17,7 @@ The program files require a working copy of GAUSS 18+. It could be made to work 
 ### Examples
 
 After installation the example files and data will be located in `pkgs/glmnet/examples` under your GAUSS installation directory. 
+
+### Documentation
+
+Documentation for the main function, `glmnetFit` can be found [here](https://github.com/aptech/gauss-glmnet/blob/master/docs/glmnetfit.md).

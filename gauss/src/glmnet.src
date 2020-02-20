@@ -35,7 +35,7 @@
 **
 **       ctl.weights      Observation weights.
 **
-**       ctl.penalties    Px1 vector, relative penalty for each predictor.
+**       ctl.penalties    1xP vector, relative penalty for each predictor.
 **
 **       ctl.standardize  1 to standardize predictors before estimation, 0 to use
 **                        unstandardized predictors. Parameter estimates are always
